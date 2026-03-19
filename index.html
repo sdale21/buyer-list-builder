@@ -203,14 +203,16 @@ input[type=range]{width:100%;accent-color:var(--gold);height:3px;}
 <!-- NAV -->
 <nav class="nav">
   <div class="nav-left">
-    <div style="display:flex;flex-direction:column;justify-content:center;gap:0;">
-      <div style="display:flex;align-items:center;gap:0;line-height:1;">
-        <svg height="28" width="8" viewBox="0 0 8 28" fill="none"><path d="M6 1H1V27H6" stroke="#1b6fc8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
-        <span style="font-family:'DM Sans',sans-serif;font-size:20px;font-weight:200;letter-spacing:5px;color:#0a0a0a;padding:0 5px 0 5px;text-transform:uppercase;">Miracle</span>
-        <svg height="28" width="8" viewBox="0 0 8 28" fill="none"><path d="M2 1H7V27H2" stroke="#1b6fc8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
-      </div>
-      <div style="font-size:6.5px;letter-spacing:2.5px;color:#1b6fc8;text-transform:uppercase;font-weight:600;text-align:center;margin-top:3px;">Car Wash Advisors</div>
-    </div>
+    <svg width="180" height="42" viewBox="0 0 180 42" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- left bracket -->
+      <path d="M16 3 L3 3 L3 39 L16 39" stroke="#1b6fc8" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      <!-- MIRACLE -->
+      <text x="20" y="29" font-family="DM Sans,sans-serif" font-size="22" font-weight="300" letter-spacing="5" fill="#0a0a0a">MIRACLE</text>
+      <!-- right bracket — manually positioned right after text ends -->
+      <path d="M164 3 L177 3 L177 39 L164 39" stroke="#1b6fc8" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      <!-- subtitle -->
+      <text x="90" y="40" font-family="DM Sans,sans-serif" font-size="6.5" font-weight="500" letter-spacing="2.5" fill="#1b6fc8" text-anchor="middle">CAR WASH ADVISORS</text>
+    </svg>
   </div>
   <div class="nav-right">
     <div class="nav-stat">
@@ -677,11 +679,16 @@ function rTier(label,cls,buyers,color){
     const types=isGoogle?[]:b.t||[];
     const dist=b.dist!=null?b.dist.toFixed(0)+' mi':'—';
     const src=isGoogle?'<span class="src-tag src-google">Google</span>':'<span class="src-tag src-sheet">Database</span>';
-    const buyerAddrForMap = isGoogle ? (b.address||b.name) : (BRAND_ADDR[name]||b.address||name);
-    const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(buyerAddrForMap)}`;
-    const mapsLink = `<a href="${mapsUrl}" target="_blank" rel="noopener" title="View on Google Maps" style="color:#e03030;text-decoration:none;font-size:14px;line-height:1;margin-left:3px;">📍</a>`;
+    // Always build maps URL - for DB use real address, for Google use location
+    const addrDisplay = isGoogle ? (b.address||'') : (BRAND_ADDR[name]||'');
+    const pinUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addrDisplay||name)}`;
+    const pin = `<a href="${pinUrl}" target="_blank" rel="noopener" style="color:#e03030;text-decoration:none;font-size:13px;flex-shrink:0;" title="View on Google Maps">📍</a>`;
     return`<div class="brow">
-      <div style="min-width:0;"><div class="bname">${name}${mapsLink}</div><div class="bsub">${src} ${typePill(types)}</div></div>
+      <div style="min-width:0;">
+        <div style="display:flex;align-items:center;gap:4px;"><span class="bname" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${name}</span>${pin}</div>
+        ${addrDisplay?`<div style="font-size:10px;color:var(--t2);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${addrDisplay}</div>`:''}
+        <div class="bsub" style="margin-top:2px;">${src} ${typePill(types)}</div>
+      </div>
       <div class="dist-val">${dist}</div>
       <div style="font-family:DM Mono,monospace;font-size:12px;color:var(--stone);">${props}</div>
       <div style="font-size:12px;color:var(--stone);">${stateStr}</div>
