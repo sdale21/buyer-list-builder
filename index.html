@@ -205,11 +205,11 @@ input[type=range]{width:100%;accent-color:var(--gold);height:3px;}
   <div class="nav-left">
     <div style="display:flex;flex-direction:column;justify-content:center;gap:0;">
       <div style="display:flex;align-items:center;gap:0;line-height:1;">
-        <svg height="30" width="10" viewBox="0 0 10 30" fill="none"><path d="M8 2H2V28H8" stroke="#1b6fc8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
-        <span style="font-family:'DM Sans',sans-serif;font-size:22px;font-weight:200;letter-spacing:6px;color:#0a0a0a;padding:0 4px;">MIRACLE</span>
-        <svg height="30" width="10" viewBox="0 0 10 30" fill="none"><path d="M2 2H8V28H2" stroke="#1b6fc8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+        <svg height="28" width="8" viewBox="0 0 8 28" fill="none"><path d="M6 1H1V27H6" stroke="#1b6fc8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+        <span style="font-family:'DM Sans',sans-serif;font-size:20px;font-weight:200;letter-spacing:5px;color:#0a0a0a;padding:0 5px 0 5px;text-transform:uppercase;">Miracle</span>
+        <svg height="28" width="8" viewBox="0 0 8 28" fill="none"><path d="M2 1H7V27H2" stroke="#1b6fc8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
       </div>
-      <div style="font-size:7.5px;letter-spacing:3px;color:#1b6fc8;text-transform:uppercase;font-weight:500;text-align:center;margin-top:2px;">CAR WASH ADVISORS</div>
+      <div style="font-size:6.5px;letter-spacing:2.5px;color:#1b6fc8;text-transform:uppercase;font-weight:600;text-align:center;margin-top:3px;">Car Wash Advisors</div>
     </div>
   </div>
   <div class="nav-right">
@@ -447,13 +447,12 @@ function scoreBrand(b, clat, clng, r1, r2, r3) {
     if (bestDist <= r1) ds = 52;
     else if (bestDist <= r2) ds = 36;
     else if (bestDist <= r3) ds = 18;
-    else if (inState) ds = 20; // in target state even if no close market
-    else return {score:0, dist:bestDist};
+    else return {score:0, dist:bestDist}; // beyond max radius - exclude regardless of size
   } else if (inState) {
     ds = 22; // operates in target state, no MSA coords
     bestDist = null;
   } else {
-    ds = 8; // fallback - national brand, include at low score
+    return {score: 0, dist: null}; // no geographic connection - exclude
   }
   const ns = (b.s||[]).length;
   const stateBonus = ns >= 20 ? 22 : ns >= 10 ? 16 : ns >= 5 ? 10 : ns >= 2 ? 6 : 2;
