@@ -1,7 +1,11 @@
 {
-  "functions": { "api/places.js": { "memory": 128, "maxDuration": 15 } },
+  "version": 2,
+  "builds": [
+    { "src": "index.html", "use": "@vercel/static" },
+    { "src": "api/places.js", "use": "@vercel/node" }
+  ],
   "routes": [
-    { "src": "/api/(.*)", "dest": "/api/$1" },
+    { "src": "/api/places", "dest": "/api/places.js" },
     { "src": "/(.*)", "dest": "/index.html" }
   ]
 }
