@@ -850,48 +850,156 @@ async function selLoc(i){
   await loadNearby();
 }
 
+// Detect wash type from name for Google results
+function detectWashType(name) {
+  const n = name.toLowerCase();
+  if (n.includes('express') || n.includes('tunnel') || n.includes('xpress')) return 'Express';
+  if (n.includes('full serv') || n.includes('full-serv')) return 'Full Serve';
+  if (n.includes('self serve') || n.includes('self-serve') || n.includes('coin')) return 'Self Serve';
+  if (n.includes('flex') || n.includes('flex serve')) return 'Flex';
+  if (n.includes('in-bay') || n.includes('automatic') || n.includes('rollover')) return 'In-Bay Automatic';
+  return '';
+}
+
+// Get wash types from sheet brand
+function getSheetTypes(brandName) {
+  const b = BRANDS.find(x => x.n === brandName);
+  return b ? (b.t || []) : [];
+}
+
+let lastNearbyResults = [];
+
 async function loadNearby(){
   if(!selectedLoc)return;
   const panel=document.getElementById('nearbyPanel');
-  panel.innerHTML=`<div style="display:flex;align-items:center;gap:8px;padding:1rem;font-size:12px;color:var(--stone);"><div class="spinner"></div> Finding nearby targets...</div>`;
-  if(!selectedLoc.lat||!selLoc.lng){panel.innerHTML=`<div class="empty-state">No coordinates</div>`;return;}
+  panel.innerHTML=`<div style="display:flex;align-items:center;gap:8px;padding:1rem;font-size:12px;color:var(--stone);"><div class="spinner"></div> Finding nearby washes...</div>`;
+  if(!selectedLoc.lat||!selectedLoc.lng){panel.innerHTML=`<div class="empty-state">No coordinates</div>`;return;}
   try{
     const rad=Math.round(nearbyR*1609);
     const r=await fetch('/api/places?type=nearby&lat='+selectedLoc.lat+'&lng='+selectedLoc.lng+'&radius='+rad);
     const d=await r.json();
-    const google=(d.results||[]).map(b=>({name:b.name,address:b.address||'',lat:b.lat,lng:b.lng,rating:b.rating||0,website:b.website||'',source:'google'}));
-    // Sheet nearby
-    const sheet=BRANDS.filter(b=>{
-      const c=getMSA(b.m?.[0]);return c&&mi(selectedLoc.lat,selectedLoc.lng,c.lat,c.lng)<=nearbyR;
-    }).map(b=>({name:b.n,address:b.m?.[0]||'',lat:null,lng:null,rating:null,website:b.w||'',source:'database',dist:99}));
-    const combined=[...google,...sheet.filter(s=>!google.some(g=>g.name.toLowerCase().includes(s.name.toLowerCase().split(' ')[0])))].map(b=>{
-      const d2=b.lat&&b.lng?mi(selectedLoc.lat,selectedLoc.lng,b.lat,b.lng):99;
-      return{...b,_d:d2};
-    }).filter(b=>b._d<=nearbyR).sort((a,b)=>a._d-b._d);
-    renderNearby(combined);
-  }catch{panel.innerHTML=`<div class="empty-state">Search failed</div>`;}
+
+    // Google results - enrich top 10 with website via details
+    const gRaw = d.results||[];
+    const enriched = await Promise.all(gRaw.slice(0,10).map(async b=>{
+      let website = b.website||'';
+      if(!website && b.placeId) {
+        try{const dr=await fetch('/api/places?type=details&placeId='+b.placeId);const dd=await dr.json();website=dd.website||'';}catch{}
+      }
+      return {...b, website};
+    }));
+    const google = [...enriched, ...gRaw.slice(10)].map(b=>({
+      name:b.name, address:b.address||'', lat:b.lat, lng:b.lng,
+      rating:b.rating||0, website:b.website||'', source:'google',
+      types: detectWashType(b.name) ? [detectWashType(b.name)] : []
+    }));
+
+    // Sheet nearby - deduplicate by brand name
+    const sheetSeen = new Set();
+    const sheet = BRANDS.filter(b=>{
+      const c=getMSA(b.m?.[0]);
+      if(!c||mi(selectedLoc.lat,selectedLoc.lng,c.lat,c.lng)>nearbyR) return false;
+      if(sheetSeen.has(b.n.toLowerCase())) return false;
+      sheetSeen.add(b.n.toLowerCase());
+      return true;
+    }).map(b=>({
+      name:b.n, address:(b.m||[]).join(', '), lat:null, lng:null,
+      rating:null, website:b.w||'', source:'database', types:b.t||[]
+    }));
+
+    // Combine - deduplicate by brand name, no duplicate brands
+    const brandSeen = new Set();
+    const combined = [...google, ...sheet].map(b=>{
+      const dist = b.lat&&b.lng ? mi(selectedLoc.lat,selectedLoc.lng,b.lat,b.lng) : 99;
+      return{...b, _d:dist};
+    }).filter(b=>{
+      if(b._d > nearbyR) return false;
+      const key = b.name.toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,12);
+      if(brandSeen.has(key)) return false;
+      brandSeen.add(key);
+      return true;
+    }).sort((a,b)=>a._d-b._d);
+
+    lastNearbyResults = combined;
+
+    // Filter by selected type if active
+    const typeFiltered = activeNearbyType === 'all' ? combined :
+      combined.filter(b => b.types && b.types.some(t=>t===activeNearbyType || (activeNearbyType==='Express'&&t.includes('Express'))));
+    renderNearby(typeFiltered);
+  }catch(e){panel.innerHTML=`<div class="empty-state">Search failed — ${e.message}</div>`;}
 }
 
-function renderNearby(nearby){
+let activeNearbyType = 'all';
+
+function filterNearbyType(type) {
+  activeNearbyType = type;
+  document.querySelectorAll('.nt-pill').forEach(p => p.classList.toggle('active', p.dataset.t === type));
+  const filtered = type === 'all' ? lastNearbyResults :
+    lastNearbyResults.filter(b => b.types && (b.types.some(t=>t===type) || (type==='Express'&&b.types.some(t=>t.includes('Express')))));
+  renderNearby(filtered, false);
+}
+
+function exportNearby() {
+  if(!lastNearbyResults.length) return;
+  const rows=[['Car Wash Name','Address','Distance (mi)','Wash Type','Website','Rating','Source']];
+  lastNearbyResults.forEach(b=>{
+    rows.push([b.name, b.address||'', b._d<90?b._d.toFixed(1):'', (b.types||[]).join(';'), b.website||'', b.rating||'', b.source]);
+  });
+  const loc = selectedLoc.name.replace(/[^a-z0-9]/gi,'_');
+  dl(rows, `MiracleAdvisors_Nearby_${loc}_${nearbyR}mi.csv`);
+}
+
+function renderNearby(nearby, resetTypeFilter=true){
+  if(resetTypeFilter) activeNearbyType='all';
+  const typeMap = {'Express':'pt-express','Full Serve':'pt-full','Flex':'pt-flex','In-Bay Automatic':'pt-inbay','Self Serve':'pt-self'};
+  const typePillHtml = ['all','Express','Full Serve','Flex','In-Bay Automatic','Self Serve'].map(t=>
+    `<span class="nt-pill type-pill${(resetTypeFilter?t==='all':t===activeNearbyType)?' active':''}" data-t="${t}" onclick="filterNearbyType('${t}')" style="font-size:10px;padding:3px 10px;">${t==='all'?'All Types':t}</span>`
+  ).join('');
+
+  const rows = nearby.slice(0,40).map(b=>{
+    const dist = b._d<90 ? b._d.toFixed(1)+' mi' : '—';
+    const types = (b.types||[]).slice(0,2).map(t=>`<span class="pill-type ${typeMap[t]||''}" style="font-size:9px;padding:1px 5px;">${t}</span>`).join(' ');
+    const website = b.website ? `<a class="wlink" href="${b.website}" target="_blank" rel="noopener">${b.website.replace(/^https?:\/\/(www\.)?/,'').split('/')[0]}</a>` : '<span class="nosite">—</span>';
+    const src = `<span class="src-tag ${b.source==='google'?'src-google':'src-sheet'}" style="font-size:9px;">${b.source==='google'?'Google':'DB'}</span>`;
+    const rating = b.rating ? `<span style="font-size:10px;color:var(--gold2);">★${b.rating}</span>` : '';
+    return `<div style="padding:10px 14px;border-bottom:1px solid var(--fog);transition:background .1s;" onmouseover="this.style.background='var(--cream)'" onmouseout="this.style.background=''">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:6px;">
+        <div style="min-width:0;flex:1;">
+          <div style="font-size:13px;font-weight:500;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${b.name}</div>
+          <div style="font-size:11px;color:var(--stone);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${b.address||'—'}</div>
+          <div style="display:flex;align-items:center;gap:5px;margin-top:4px;flex-wrap:wrap;">${src}${types?` ${types}`:''}${rating?` ${rating}`:''}</div>
+        </div>
+        <div style="text-align:right;flex-shrink:0;">
+          <div style="font-family:DM Mono,monospace;font-size:11px;color:var(--stone);">${dist}</div>
+          <div style="margin-top:3px;">${website}</div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
   document.getElementById('nearbyPanel').innerHTML=`
-    <div class="nearby-title">${selectedLoc.name}</div>
-    <div class="nearby-sub">${selectedLoc.address||''}</div>
-    <div class="rc">
-      <label>Search radius</label>
-      <input type="range" min="1" max="10" step="0.5" value="${nearbyR}" oninput="nearbyR=+this.value;document.getElementById('rv').textContent=this.value+' mi';loadNearby()"/>
-      <span class="rv" id="rv">${nearbyR} mi</span>
+    <div style="padding:12px 14px;border-bottom:1px solid var(--fog);">
+      <div style="font-size:14px;font-weight:500;color:var(--ink);margin-bottom:1px;">${selectedLoc.name}</div>
+      <div style="font-size:11px;color:var(--stone);">${selectedLoc.address||''}</div>
     </div>
-    ${nearby.length===0?`<div class="empty-state"><div class="empty-icon">🔍</div>No car washes within ${nearbyR} miles — try increasing the radius</div>`:`
-      <div style="font-size:11px;color:var(--stone);margin-bottom:8px;letter-spacing:0.3px;text-transform:uppercase;">${nearby.length} target${nearby.length!==1?'s':''} within ${nearbyR} mi</div>
-      <div class="nhead"><span>Name</span><span>Distance</span><span>Source</span><span>Website</span><span>Rating</span></div>
-      <div>${nearby.slice(0,25).map(b=>`<div class="nrow">
-        <div class="nname">${b.name}</div>
-        <div class="ndist">${b._d<90?b._d.toFixed(1)+' mi':'—'}</div>
-        <div><span class="src-tag ${b.source==='google'?'src-google':'src-sheet'}">${b.source==='google'?'Google':'DB'}</span></div>
-        <div style="min-width:0;">${b.website?`<a class="wlink" href="${b.website}" target="_blank">${b.website.replace(/^https?:\/\/(www\.)?/,'').split('/')[0]}</a>`:'<span class="nosite">—</span>'}</div>
-        <div style="font-size:11px;color:var(--stone);">${b.rating?'★'+b.rating:'—'}</div>
-      </div>`).join('')}</div>
-    `}`;
+    <div style="padding:10px 14px;border-bottom:1px solid var(--fog);display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+      <div class="rc" style="flex:1;margin:0;padding:0;border:none;background:transparent;min-width:180px;">
+        <label style="font-size:11px;color:var(--stone);white-space:nowrap;">Radius</label>
+        <input type="range" min="1" max="20" step="1" value="${nearbyR}" style="flex:1;" oninput="nearbyR=+this.value;document.getElementById('rv').textContent=this.value+' mi';loadNearby()"/>
+        <span class="rv" id="rv" style="font-size:12px;font-weight:500;min-width:36px;">${nearbyR} mi</span>
+      </div>
+      <button onclick="exportNearby()" class="btn btn-outline" style="padding:5px 12px;font-size:11px;gap:4px;flex-shrink:0;">
+        <svg width="11" height="11" viewBox="0 0 14 14" fill="none"><path d="M7 2v7M4 6l3 3 3-3M2 11h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Export
+      </button>
+    </div>
+    <div style="padding:8px 14px;border-bottom:1px solid var(--fog);display:flex;gap:5px;flex-wrap:wrap;">${typePillHtml}</div>
+    ${nearby.length===0
+      ? `<div class="empty-state"><div class="empty-icon">🔍</div>No ${activeNearbyType==='all'?'':activeNearbyType+' '}washes within ${nearbyR} miles</div>`
+      : `<div style="font-size:10px;color:var(--stone);padding:6px 14px;letter-spacing:0.5px;text-transform:uppercase;">${nearby.length} car wash${nearby.length!==1?'es':''} found</div>
+         <div style="overflow-y:auto;max-height:420px;">${rows}</div>
+         ${nearby.length>40?`<div class="oflow">+${nearby.length-40} more in export</div>`:''}`
+    }`;
 }
 
 // ═══ EXPORT ═══
