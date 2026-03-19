@@ -203,12 +203,14 @@ input[type=range]{width:100%;accent-color:var(--gold);height:3px;}
 <!-- NAV -->
 <nav class="nav">
   <div class="nav-left">
-    <svg height="38" viewBox="0 0 230 50" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block;">
-      <path d="M6 4 L2 4 L2 46 L6 46" stroke="#1b6fc8" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-      <text x="14" y="35" font-family="DM Sans,sans-serif" font-size="27" font-weight="200" letter-spacing="7" fill="#0a0a0a">MIRACLE</text>
-      <path d="M224 4 L228 4 L228 46 L224 46" stroke="#1b6fc8" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-      <text x="115" y="46" font-family="DM Sans,sans-serif" font-size="7" font-weight="500" letter-spacing="3" fill="#1b6fc8" text-anchor="middle">CAR WASH ADVISORS</text>
-    </svg>
+    <div style="display:flex;flex-direction:column;justify-content:center;gap:0;">
+      <div style="display:flex;align-items:center;gap:0;line-height:1;">
+        <svg height="30" width="10" viewBox="0 0 10 30" fill="none"><path d="M8 2H2V28H8" stroke="#1b6fc8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+        <span style="font-family:'DM Sans',sans-serif;font-size:22px;font-weight:200;letter-spacing:6px;color:#0a0a0a;padding:0 4px;">MIRACLE</span>
+        <svg height="30" width="10" viewBox="0 0 10 30" fill="none"><path d="M2 2H8V28H2" stroke="#1b6fc8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+      </div>
+      <div style="font-size:7.5px;letter-spacing:3px;color:#1b6fc8;text-transform:uppercase;font-weight:500;text-align:center;margin-top:2px;">CAR WASH ADVISORS</div>
+    </div>
   </div>
   <div class="nav-right">
     <div class="nav-stat">
@@ -576,6 +578,7 @@ async function buildAll(){
   const btn=document.getElementById('buildBtn');
   btn.innerHTML='<span class="spinner"></span> Generating...';btn.disabled=true;
   mktLists={};
+  try {
 
   for(const m of valid){
     if(!m.coords){mktLists[m.id]={market:m,buyers:[],googBuyers:[],error:'Could not locate market.'};continue;}
@@ -605,11 +608,13 @@ async function buildAll(){
     mktLists[m.id]={market:m,buyers:scored,googBuyers:gScored,all,dupesRemoved:gRaw.length-gUnique.length};
   }
 
+  } catch(err) {
+    console.error('buildAll error:', err);
+    alert('Error building list: ' + err.message);
+  }
   btn.innerHTML='Generate Buyer Lists <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M8 3l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   btn.disabled=false;
-  // Track lists generated
-  const listCount = parseInt(document.getElementById('navLists').textContent||'0') + valid.length;
-  document.getElementById('navLists').textContent = listCount;
+
   document.getElementById('mktResults').classList.remove('hidden');
   activeMkt=valid[0].id;renderMktTabs();renderMktTab(activeMkt);
   setTimeout(()=>document.getElementById('mktResults').scrollIntoView({behavior:'smooth'}),100);
