@@ -203,16 +203,12 @@ input[type=range]{width:100%;accent-color:var(--gold);height:3px;}
 <!-- NAV -->
 <nav class="nav">
   <div class="nav-left">
-    <div class="nav-mark">
-      <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-        <path d="M9 2L16 6V12L9 16L2 12V6L9 2Z" stroke="var(--blue)" stroke-width="1.5" fill="none"/>
-        <circle cx="9" cy="9" r="2.5" fill="var(--blue)"/>
-      </svg>
-    </div>
-    <div>
-      <div class="nav-name">Miracle Car Wash Advisors</div>
-      <div class="nav-sub">Buyer Intelligence Platform</div>
-    </div>
+    <svg height="38" viewBox="0 0 230 50" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block;">
+      <path d="M6 4 L2 4 L2 46 L6 46" stroke="#1b6fc8" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="14" y="35" font-family="DM Sans,sans-serif" font-size="27" font-weight="200" letter-spacing="7" fill="#0a0a0a">MIRACLE</text>
+      <path d="M224 4 L228 4 L228 46 L224 46" stroke="#1b6fc8" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="115" y="46" font-family="DM Sans,sans-serif" font-size="7" font-weight="500" letter-spacing="3" fill="#1b6fc8" text-anchor="middle">CAR WASH ADVISORS</text>
+    </svg>
   </div>
   <div class="nav-right">
     <div class="nav-stat">
@@ -405,6 +401,34 @@ async function geoLoc(loc) {
 function mi(la1,ln1,la2,ln2){const R=3958.8,dL=(la2-la1)*Math.PI/180,dN=(ln2-ln1)*Math.PI/180,a=Math.sin(dL/2)**2+Math.cos(la1*Math.PI/180)*Math.cos(la2*Math.PI/180)*Math.sin(dN/2)**2;return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));}
 
 // ═══ SCORING ═══
+const STATE_BOUNDS = {
+  'CA':[32.5,42,-124.5,-114],'WA':[45.5,49,-124.5,-116],'OR':[42,46.2,-124.5,-116],
+  'NV':[35,42,-120,-114],'AZ':[31.3,37,-114.9,-109],'UT':[37,42,-114,-109],
+  'CO':[37,41,-109,-102],'NM':[31.3,37,-109,-103],'TX':[25.8,36.5,-106.6,-93.5],
+  'ID':[42,49,-117,-111],'MT':[44.4,49,-116,-104],'WY':[41,45,-111,-104],
+  'ND':[45.9,49,-104,-96.5],'SD':[42.5,45.9,-104,-96.5],'NE':[40,43,-104,-95.3],
+  'KS':[36.9,40,-102,-94.6],'OK':[33.6,37,-103,-94],'MN':[43.5,49,-97,-89.5],
+  'IA':[40.4,43.5,-96.6,-90.1],'MO':[36,40.6,-95.8,-89],'WI':[42.5,47,-92.9,-86.8],
+  'IL':[36.9,42.5,-91.5,-87.5],'IN':[37.8,41.8,-88.1,-84.8],'OH':[38.4,41.9,-84.8,-80.5],
+  'MI':[41.7,48,-90.4,-82.4],'LA':[28.9,33,-94,-89],'MS':[30,35,-91.7,-88.1],
+  'AL':[30,35,-88.5,-84.9],'GA':[30.4,35,-85.6,-80.8],'FL':[24.4,31.1,-87.6,-80],
+  'TN':[34.9,36.7,-90.3,-81.6],'NC':[33.8,36.6,-84.3,-75.5],'SC':[32.1,35.2,-83.4,-78.5],
+  'VA':[36.5,39.5,-83.7,-75.2],'WV':[37.2,40.6,-82.6,-77.7],'KY':[36.5,39.1,-89.6,-81.9],
+  'AR':[33,36.5,-94.6,-89.6],'PA':[39.7,42.3,-80.5,-74.7],'NY':[40.5,45.1,-79.8,-71.9],
+  'NJ':[38.9,41.4,-75.6,-73.9],'CT':[41,42.1,-73.7,-71.8],'MD':[37.9,39.7,-79.5,-75.1],
+  'DE':[38.4,39.8,-75.8,-75],'MA':[41.2,42.9,-73.5,-69.9],'RI':[41.1,42.1,-71.9,-71.1],
+  'NH':[42.7,45.3,-72.6,-70.6],'VT':[42.7,45.1,-73.5,-71.5],'ME':[43,47.5,-71.1,-66.9],
+};
+function getTargetState(lat,lng){
+  for(const[st,[la1,la2,ln1,ln2]] of Object.entries(STATE_BOUNDS)){
+    if(lat>=la1&&lat<=la2&&lng>=ln1&&lng<=ln2) return st;
+  }
+  return null;
+}
+
+// googleMapsLink removed
+
+
 function scoreBrand(b, clat, clng, r1, r2, r3) {
   // Try all markets for closest match
   let bestDist = null, ds = 0;
@@ -489,32 +513,6 @@ function isCarWash(name) {
 }
 
 // Reverse lookup: find state for given coordinates
-const STATE_BOUNDS = {
-  'CA':[32.5,42,-124.5,-114],'WA':[45.5,49,-124.5,-116],'OR':[42,46.2,-124.5,-116],
-  'NV':[35,42,-120,-114],'AZ':[31.3,37,-114.9,-109],'UT':[37,42,-114,-109],
-  'CO':[37,41,-109,-102],'NM':[31.3,37,-109,-103],'TX':[25.8,36.5,-106.6,-93.5],
-  'ID':[42,49,-117,-111],'MT':[44.4,49,-116,-104],'WY':[41,45,-111,-104],
-  'ND':[45.9,49,-104,-96.5],'SD':[42.5,45.9,-104,-96.5],'NE':[40,43,-104,-95.3],
-  'KS':[36.9,40,-102,-94.6],'OK':[33.6,37,-103,-94],'MN':[43.5,49,-97,-89.5],
-  'IA':[40.4,43.5,-96.6,-90.1],'MO':[36,40.6,-95.8,-89],'WI':[42.5,47,-92.9,-86.8],
-  'IL':[36.9,42.5,-91.5,-87.5],'IN':[37.8,41.8,-88.1,-84.8],'OH':[38.4,41.9,-84.8,-80.5],
-  'MI':[41.7,48,-90.4,-82.4],'LA':[28.9,33,-94,-89],'MS':[30,35,-91.7,-88.1],
-  'AL':[30,35,-88.5,-84.9],'GA':[30.4,35,-85.6,-80.8],'FL':[24.4,31.1,-87.6,-80],
-  'TN':[34.9,36.7,-90.3,-81.6],'NC':[33.8,36.6,-84.3,-75.5],'SC':[32.1,35.2,-83.4,-78.5],
-  'VA':[36.5,39.5,-83.7,-75.2],'WV':[37.2,40.6,-82.6,-77.7],'KY':[36.5,39.1,-89.6,-81.9],
-  'AR':[33,36.5,-94.6,-89.6],'PA':[39.7,42.3,-80.5,-74.7],'NY':[40.5,45.1,-79.8,-71.9],
-  'NJ':[38.9,41.4,-75.6,-73.9],'CT':[41,42.1,-73.7,-71.8],'MD':[37.9,39.7,-79.5,-75.1],
-  'DE':[38.4,39.8,-75.8,-75],'MA':[41.2,42.9,-73.5,-69.9],'RI':[41.1,42.1,-71.9,-71.1],
-  'NH':[42.7,45.3,-72.6,-70.6],'VT':[42.7,45.1,-73.5,-71.5],'ME':[43,47.5,-71.1,-66.9],
-};
-function getTargetState(lat,lng){
-  for(const[st,[la1,la2,ln1,ln2]] of Object.entries(STATE_BOUNDS)){
-    if(lat>=la1&&lat<=la2&&lng>=ln1&&lng<=ln2) return st;
-  }
-  return null;
-}
-
-// googleMapsLink removed
 
 function dedup(sheet, google) {
   const seen = new Set(sheet.map(b=>b.n.toLowerCase().replace(/[^a-z0-9]/g,'')));
@@ -675,8 +673,9 @@ function rTier(label,cls,buyers,color){
     const types=isGoogle?[]:b.t||[];
     const dist=b.dist!=null?b.dist.toFixed(0)+' mi':'—';
     const src=isGoogle?'<span class="src-tag src-google">Google</span>':'<span class="src-tag src-sheet">Database</span>';
-    const mapsUrl=isGoogle&&b.lat&&b.lng?`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(b.name+' '+( b.address||''))}`:'';
-    const mapsLink=mapsUrl?`<a href="${mapsUrl}" target="_blank" rel="noopener" title="View on Google Maps" style="font-size:10px;color:var(--blue);text-decoration:none;margin-left:4px;opacity:.8;">📍</a>`:'';
+    const buyerAddrForMap = isGoogle ? (b.address||b.name) : (BRAND_ADDR[name]||b.address||name);
+    const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(buyerAddrForMap)}`;
+    const mapsLink = `<a href="${mapsUrl}" target="_blank" rel="noopener" title="View on Google Maps" style="color:#e03030;text-decoration:none;font-size:14px;line-height:1;margin-left:3px;">📍</a>`;
     return`<div class="brow">
       <div style="min-width:0;"><div class="bname">${name}${mapsLink}</div><div class="bsub">${src} ${typePill(types)}</div></div>
       <div class="dist-val">${dist}</div>
