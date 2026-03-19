@@ -9,34 +9,34 @@
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 :root{
-  --ink:#0f0e0d;--ink2:#2a2825;--ink3:#4a4844;
-  --stone:#8a8680;--dust:#b8b4af;--fog:#e8e4df;--cream:#f5f2ee;--paper:#faf8f5;
-  --gold:#c4922a;--gold2:#dba94a;--gold3:#f0c870;
-  --green:#2d5a3d;--green2:#4a8c62;
-  --red:#8b2a2a;--blue:#1a3a5c;
-  --r:6px;--rl:10px;--rxl:16px;
-  --shadow:0 1px 3px rgba(0,0,0,0.08),0 4px 16px rgba(0,0,0,0.06);
+  --ink:#0a0a0a;--ink2:#1a1a1a;--ink3:#2a2a2a;
+  --stone:#6b6b6b;--dust:#9b9b9b;--fog:#e0e5ea;--cream:#f4f7fa;--paper:#f8fafc;
+  --gold:#1b6fc8;--gold2:#2980d9;--gold3:#5ba3e8;
+  --green:#1a5c1a;--green2:#2a8c2a;
+  --red:#8b2a2a;--blue:#1b6fc8;
+  --r:4px;--rl:8px;--rxl:12px;
+  --shadow:0 1px 3px rgba(0,0,0,0.08),0 4px 16px rgba(0,0,0,0.05);
 }
 body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);min-height:100vh;font-size:14px;line-height:1.5;}
 
 /* ── NAV ── */
-.nav{background:var(--ink);border-bottom:1px solid rgba(196,146,42,0.3);padding:0 2rem;height:58px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+.nav{background:#fff;border-bottom:2px solid var(--blue);padding:0 2rem;height:62px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(27,111,200,0.08);}
 .nav-left{display:flex;align-items:center;gap:14px;}
-.nav-mark{width:32px;height:32px;background:var(--gold);border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-.nav-name{font-family:'Playfair Display',serif;font-size:15px;color:#fff;letter-spacing:0.3px;}
-.nav-sub{font-size:11px;color:var(--dust);margin-left:2px;letter-spacing:1px;text-transform:uppercase;}
+.nav-mark{width:36px;height:36px;background:transparent;border:2px solid var(--blue);border-radius:2px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.nav-name{font-family:'Playfair Display',serif;font-size:15px;color:var(--ink);letter-spacing:0.3px;}
+.nav-sub{font-size:11px;color:var(--blue);margin-left:2px;letter-spacing:1.5px;text-transform:uppercase;font-weight:500;}
 .nav-right{display:flex;align-items:center;gap:16px;}
 .nav-stat{text-align:right;}
-.nav-stat-n{font-family:'DM Mono',monospace;font-size:13px;color:var(--gold2);font-weight:400;}
+.nav-stat-n{font-family:'DM Mono',monospace;font-size:13px;color:var(--blue);font-weight:500;}
 .nav-stat-l{font-size:10px;color:var(--stone);letter-spacing:0.5px;text-transform:uppercase;}
 .status-dot{width:6px;height:6px;border-radius:50%;background:var(--green2);animation:pulse 2s ease-in-out infinite;display:inline-block;margin-right:5px;}
 @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.4;}}
 
 /* ── TABS ── */
-.mode-bar{background:var(--ink2);border-bottom:1px solid rgba(255,255,255,0.06);padding:0 2rem;display:flex;gap:0;}
-.mode-tab{padding:12px 20px;font-size:12px;font-weight:500;letter-spacing:0.8px;text-transform:uppercase;color:var(--stone);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;background:none;border-top:none;border-left:none;border-right:none;border-bottom:2px solid transparent;}
-.mode-tab:hover{color:var(--dust);}
-.mode-tab.active{color:var(--gold2);border-bottom-color:var(--gold);}
+.mode-bar{background:#fff;border-bottom:1px solid var(--fog);padding:0 2rem;display:flex;gap:0;}
+.mode-tab{padding:14px 22px;font-size:11px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:var(--stone);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;background:none;border-top:none;border-left:none;border-right:none;}
+.mode-tab:hover{color:var(--ink);}
+.mode-tab.active{color:var(--blue);border-bottom-color:var(--blue);}
 
 /* ── LAYOUT ── */
 .wrap{max-width:1100px;margin:0 auto;padding:2rem 1.5rem;}
@@ -62,7 +62,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);m
 .type-pill{padding:5px 12px;border-radius:20px;border:1px solid var(--fog);background:#fff;font-size:12px;color:var(--stone);cursor:pointer;transition:all .12s;font-weight:500;}
 .type-pill:hover{border-color:var(--gold);color:var(--gold);}
 .type-pill.active{background:var(--gold);color:#fff;border-color:var(--gold);}
-.type-pill[data-type="Express"].active{background:#1a3a5c;border-color:#1a3a5c;}
+.type-pill[data-type="Express"].active{background:var(--blue);border-color:var(--blue);}
 .type-pill[data-type="Full Serve"].active{background:#2d5a3d;border-color:#2d5a3d;}
 .type-pill[data-type="Flex"].active{background:#5a2d8a;border-color:#5a2d8a;}
 .type-pill[data-type="In-Bay Automatic"].active{background:#8a4a1a;border-color:#8a4a1a;}
@@ -110,11 +110,11 @@ input[type=range]{width:100%;accent-color:var(--gold);height:3px;}
 /* ── TIER SECTIONS ── */
 .tier-sec{margin-bottom:1.75rem;}
 .tier-head{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:var(--r);margin-bottom:8px;}
-.tier-head.t1{background:linear-gradient(135deg,#fdf6e8,#fef9f0);border:1px solid rgba(196,146,42,0.2);}
+.tier-head.t1{background:linear-gradient(135deg,#eaf2fb,#f0f6fd);border:1px solid rgba(27,111,200,0.2);}
 .tier-head.t2{background:linear-gradient(135deg,#f0f0ee,#f5f5f3);border:1px solid var(--fog);}
 .tier-head.t3{background:var(--cream);border:1px solid var(--fog);}
 .tier-label{font-family:'Playfair Display',serif;font-size:14px;}
-.tier-label.t1{color:#7a5c1a;}
+.tier-label.t1{color:#0d4f9e;}
 .tier-label.t2{color:var(--ink2);}
 .tier-label.t3{color:var(--stone);}
 .tier-count{font-size:12px;color:var(--stone);margin-left:auto;font-family:'DM Mono',monospace;}
@@ -143,7 +143,7 @@ input[type=range]{width:100%;accent-color:var(--gold);height:3px;}
 .src-tag{font-size:10px;padding:2px 6px;border-radius:3px;display:inline-block;}
 .src-sheet{background:var(--cream);color:var(--stone);}
 .src-google{background:#eaf3de;color:#27500a;}
-.wlink{font-size:11px;color:var(--gold);text-decoration:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;font-family:'DM Mono',monospace;}
+.wlink{font-size:11px;color:var(--blue);text-decoration:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;font-family:'DM Mono',monospace;}
 .wlink:hover{text-decoration:underline;}
 .nosite{font-size:11px;color:var(--dust);}
 .oflow{font-size:12px;color:var(--stone);padding:8px 14px;text-align:center;font-style:italic;border-top:1px solid var(--fog);margin-top:4px;}
@@ -205,8 +205,8 @@ input[type=range]{width:100%;accent-color:var(--gold);height:3px;}
   <div class="nav-left">
     <div class="nav-mark">
       <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-        <path d="M9 2L16 6V12L9 16L2 12V6L9 2Z" stroke="#fff" stroke-width="1.5" fill="none"/>
-        <circle cx="9" cy="9" r="2.5" fill="#fff"/>
+        <path d="M9 2L16 6V12L9 16L2 12V6L9 2Z" stroke="var(--blue)" stroke-width="1.5" fill="none"/>
+        <circle cx="9" cy="9" r="2.5" fill="var(--blue)"/>
       </svg>
     </div>
     <div>
@@ -348,13 +348,13 @@ const CITIES={"san diego":[32.7157,-117.1611],"los angeles":[34.0522,-118.2437],
 // ═══ INIT ═══
 let activeTypes = new Set(['all']);
 let mkts = [], mktLists = {}, activeMkt = 0, gT = {};
-let brandLocs = [], selLoc = null, nearbyR = 5;
+let brandLocs = [], selectedLoc = null, nearbyR = 5;
 
 function init() {
   // Count stats
   document.getElementById('navCount').textContent = (16127).toLocaleString();
   document.getElementById('navBrands').textContent = BRANDS.length.toLocaleString();
-  document.getElementById('statusDot').style.background = 'var(--green2)';
+  document.getElementById('statusDot').style.background = 'var(--blue)';
   document.getElementById('statusText').textContent = 'Live · Google Places Active';
   addMkt();
 }
@@ -486,17 +486,17 @@ function renderMkts(){
       <div id="gs-${m.id}" style="padding-left:36px;">${m.coords?'<span class="geo-ok">✓ Located</span>':'<span class="geo-wait">Enter a location above</span>'}</div>
       <div class="sliders" style="padding-left:36px;margin-top:10px;">
         <div class="sg">
-          <div class="sg-label"><span class="tier-badge" style="background:#c4922a;">1</span>Tier 1 radius</div>
+          <div class="sg-label"><span class="tier-badge" style="background:var(--blue);">1</span>Tier 1 radius</div>
           <input type="range" min="5" max="100" step="5" value="${m.r1}" oninput="upMkt(${m.id},'r1',+this.value);document.getElementById('v1-${m.id}').textContent=this.value+' mi'"/>
           <div class="sg-val" id="v1-${m.id}">${m.r1} mi</div>
         </div>
         <div class="sg">
-          <div class="sg-label"><span class="tier-badge" style="background:var(--stone);">2</span>Tier 2 radius</div>
+          <div class="sg-label"><span class="tier-badge" style="background:#6b6b6b;">2</span>Tier 2 radius</div>
           <input type="range" min="10" max="200" step="5" value="${m.r2}" oninput="upMkt(${m.id},'r2',+this.value);document.getElementById('v2-${m.id}').textContent=this.value+' mi'"/>
           <div class="sg-val" id="v2-${m.id}">${m.r2} mi</div>
         </div>
         <div class="sg">
-          <div class="sg-label"><span class="tier-badge" style="background:var(--dust);">3</span>Tier 3 radius</div>
+          <div class="sg-label"><span class="tier-badge" style="background:#9b9b9b;">3</span>Tier 3 radius</div>
           <input type="range" min="20" max="400" step="10" value="${m.r3}" oninput="upMkt(${m.id},'r3',+this.value);document.getElementById('v3-${m.id}').textContent=this.value+' mi'"/>
           <div class="sg-val" id="v3-${m.id}">${m.r3} mi</div>
         </div>
@@ -587,7 +587,7 @@ function renderMktTab(id){
         <div class="kpi"><div class="kpi-n">${gC}</div><div class="kpi-l">Google</div></div>
       </div>
     </div>
-    ${rTier('Tier I — Prime Targets','t1',t1,'#c4922a')}
+    ${rTier('Tier I — Prime Targets','t1',t1,'#1b6fc8')}
     ${rTier('Tier II — Strong Secondaries','t2',t2,'var(--stone)')}
     ${rTier('Tier III — Broad Reach','t3',t3,'var(--dust)')}
   `;
@@ -620,7 +620,7 @@ function rTier(label,cls,buyers,color){
   }).join('');
   return`<div class="tier-sec">
     <div class="tier-head ${cls}">
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5" fill="${color}" fill-opacity=".15" stroke="${color}" stroke-width="1.2"/><circle cx="7" cy="7" r="2" fill="${color}"/></svg>
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5" fill="${color}" fill-opacity=".12" stroke="${color}" stroke-width="1.2"/><circle cx="7" cy="7" r="2" fill="${color}"/></svg>
       <span class="tier-label ${cls}">${label}</span>
       <span class="tier-count">${buyers.length} buyer${buyers.length!==1?'s':''}</span>
     </div>
@@ -702,11 +702,11 @@ function renderUSMap(){
   function proj(la,ln){return{x:((ln-lnMin)/(lnMax-lnMin))*W,y:((laMax-la)/(laMax-laMin))*H};}
   const dots=brandLocs.filter(l=>l.lat&&l.lng&&l.lat>24&&l.lat<50&&l.lng>-125&&l.lng<-66).map((l,i)=>{
     const{x,y}=proj(l.lat,l.lng);
-    return`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="5" fill="var(--gold)" fill-opacity=".9" stroke="var(--paper)" stroke-width="1.2" style="cursor:pointer;" onclick="selLoc(${i})" id="dot-${i}"><title>${l.name}</title></circle>`;
+    return`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="5" fill="var(--blue)" fill-opacity=".9" stroke="#fff" stroke-width="1.2" style="cursor:pointer;" onclick="selLoc(${i})" id="dot-${i}"><title>${l.name}</title></circle>`;
   }).join('');
   const el=document.getElementById('svgMap');
   el.innerHTML=`<svg viewBox="0 0 ${W} ${H}" style="width:100%;background:#f5f2ee;display:block;" xmlns="http://www.w3.org/2000/svg">
-    <rect width="${W}" height="${H}" fill="#f5f2ee"/>
+    <rect width="${W}" height="${H}" fill="#f4f7fa"/>
     <line x1="${proj(37,-100).x.toFixed(0)}" y1="0" x2="${proj(37,-100).x.toFixed(0)}" y2="${H}" stroke="var(--fog)" stroke-width="1"/>
     <line x1="0" y1="${proj(37,-100).y.toFixed(0)}" x2="${W}" y2="${proj(37,-100).y.toFixed(0)}" stroke="var(--fog)" stroke-width="1"/>
     <text x="8" y="${H-8}" font-size="9" fill="var(--dust)" font-family="DM Sans,sans-serif" letter-spacing="0.5">SELECT A LOCATION TO FIND NEARBY TARGETS</text>
@@ -716,7 +716,7 @@ function renderUSMap(){
 }
 
 async function selLoc(i){
-  selLoc=brandLocs[i];
+  selectedLoc=brandLocs[i];
   document.querySelectorAll('.loc-row').forEach(r=>r.classList.remove('sel'));
   document.getElementById('lr-'+i)?.classList.add('sel');
   document.getElementById('lr-'+i)?.scrollIntoView({block:'nearest',behavior:'smooth'});
@@ -727,21 +727,21 @@ async function selLoc(i){
 }
 
 async function loadNearby(){
-  if(!selLoc)return;
+  if(!selectedLoc)return;
   const panel=document.getElementById('nearbyPanel');
   panel.innerHTML=`<div style="display:flex;align-items:center;gap:8px;padding:1rem;font-size:12px;color:var(--stone);"><div class="spinner"></div> Finding nearby targets...</div>`;
-  if(!selLoc.lat||!selLoc.lng){panel.innerHTML=`<div class="empty-state">No coordinates</div>`;return;}
+  if(!selectedLoc.lat||!selLoc.lng){panel.innerHTML=`<div class="empty-state">No coordinates</div>`;return;}
   try{
     const rad=Math.round(nearbyR*1609);
-    const r=await fetch('/api/places?type=nearby&lat='+selLoc.lat+'&lng='+selLoc.lng+'&radius='+rad);
+    const r=await fetch('/api/places?type=nearby&lat='+selectedLoc.lat+'&lng='+selectedLoc.lng+'&radius='+rad);
     const d=await r.json();
     const google=(d.results||[]).map(b=>({name:b.name,address:b.address||'',lat:b.lat,lng:b.lng,rating:b.rating||0,website:b.website||'',source:'google'}));
     // Sheet nearby
     const sheet=BRANDS.filter(b=>{
-      const c=getMSA(b.m?.[0]);return c&&mi(selLoc.lat,selLoc.lng,c.lat,c.lng)<=nearbyR;
+      const c=getMSA(b.m?.[0]);return c&&mi(selectedLoc.lat,selectedLoc.lng,c.lat,c.lng)<=nearbyR;
     }).map(b=>({name:b.n,address:b.m?.[0]||'',lat:null,lng:null,rating:null,website:b.w||'',source:'database',dist:99}));
     const combined=[...google,...sheet.filter(s=>!google.some(g=>g.name.toLowerCase().includes(s.name.toLowerCase().split(' ')[0])))].map(b=>{
-      const d2=b.lat&&b.lng?mi(selLoc.lat,selLoc.lng,b.lat,b.lng):99;
+      const d2=b.lat&&b.lng?mi(selectedLoc.lat,selectedLoc.lng,b.lat,b.lng):99;
       return{...b,_d:d2};
     }).filter(b=>b._d<=nearbyR).sort((a,b)=>a._d-b._d);
     renderNearby(combined);
@@ -750,8 +750,8 @@ async function loadNearby(){
 
 function renderNearby(nearby){
   document.getElementById('nearbyPanel').innerHTML=`
-    <div class="nearby-title">${selLoc.name}</div>
-    <div class="nearby-sub">${selLoc.address||''}</div>
+    <div class="nearby-title">${selectedLoc.name}</div>
+    <div class="nearby-sub">${selectedLoc.address||''}</div>
     <div class="rc">
       <label>Search radius</label>
       <input type="range" min="1" max="10" step="0.5" value="${nearbyR}" oninput="nearbyR=+this.value;document.getElementById('rv').textContent=this.value+' mi';loadNearby()"/>
@@ -795,7 +795,7 @@ function dl(rows,fn){
   const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download=fn;a.click();
 }
 
-init();
+document.addEventListener('DOMContentLoaded', init);
 </script>
 </body>
 </html>
