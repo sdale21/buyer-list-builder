@@ -314,12 +314,16 @@ input[type=range]{width:100%;accent-color:var(--gold);height:3px;}
   <div id="brandResults" class="hidden">
     <div class="card">
       <div id="brandHeader"></div>
-      <div class="map-box">
-        <div id="mapPh" class="map-ph">
+      <div class="map-box" style="height:420px;position:relative;">
+        <div id="mapPh" class="map-ph" style="height:420px;">
           <svg width="40" height="40" viewBox="0 0 40 40" fill="none"><circle cx="20" cy="18" r="10" stroke="var(--fog)" stroke-width="1.5"/><circle cx="20" cy="18" r="4" fill="var(--fog)"/><path d="M20 28C16 34 10 37 10 40M20 28C24 34 30 37 30 40" stroke="var(--fog)" stroke-width="1.5" stroke-linecap="round"/></svg>
           Search a brand to see their national map
         </div>
-        <div id="svgMap" class="hidden"></div>
+        <div id="svgMap" class="hidden" style="height:420px;"></div>
+        <div id="gmapContainer" class="hidden" style="height:420px;width:100%;position:relative;">
+          <div id="gmap" style="height:100%;width:100%;border-radius:8px;"></div>
+          <div id="mapHint" style="position:absolute;bottom:10px;left:50%;transform:translateX(-50%);background:rgba(255,255,255,0.95);border:1px solid var(--fog);border-radius:20px;padding:5px 14px;font-size:11px;color:var(--stone);letter-spacing:0.5px;box-shadow:0 2px 8px rgba(0,0,0,0.1);">CLICK ANY PIN TO FIND NEARBY TARGETS</div>
+        </div>
         <div id="mapLoad" class="map-load hidden"><div class="spinner"></div> Searching locations...</div>
       </div>
       <div class="brand-kpis" id="bkpis"></div>
@@ -404,34 +408,46 @@ function mi(la1,ln1,la2,ln2){const R=3958.8,dL=(la2-la1)*Math.PI/180,dN=(ln2-ln1
 
 // ═══ SCORING ═══
 function scoreBrand(b, clat, clng, r1, r2, r3) {
-  const c = getMSA(b.m?.[0]);
-  let ds = 0, dist = null;
-  if (c) {
-    dist = mi(clat, clng, c.lat, c.lng);
-    if (dist <= r1) ds = 50;
-    else if (dist <= r2) ds = 32;
-    else if (dist <= r3) ds = 15;
-    else return {score:0,dist};
-  } else ds = 16;
-  // Multi-state bonus
+  // Try all markets for closest match
+  let bestDist = null, ds = 0;
+  for (const mkt of (b.m||[])) {
+    const c = getMSA(mkt);
+    if (!c) continue;
+    const d = mi(clat, clng, c.lat, c.lng);
+    if (bestDist === null || d < bestDist) bestDist = d;
+  }
+  // Also check state-level match
+  const targetState = getTargetState(clat, clng);
+  const inState = targetState && (b.s||[]).includes(targetState);
+  if (bestDist !== null) {
+    if (bestDist <= r1) ds = 52;
+    else if (bestDist <= r2) ds = 36;
+    else if (bestDist <= r3) ds = 18;
+    else if (inState) ds = 20; // in target state even if no close market
+    else return {score:0, dist:bestDist};
+  } else if (inState) {
+    ds = 22; // operates in target state, no MSA coords
+    bestDist = null;
+  } else {
+    ds = 8; // fallback - national brand, include at low score
+  }
   const ns = (b.s||[]).length;
-  const stateBonus = ns >= 15 ? 20 : ns >= 8 ? 14 : ns >= 4 ? 9 : ns >= 2 ? 5 : 0;
-  // Property count bonus
-  const propBonus = b.p >= 100 ? 18 : b.p >= 50 ? 13 : b.p >= 20 ? 8 : b.p >= 5 ? 4 : 0;
-  // Website bonus
-  const webBonus = b.w ? 6 : 0;
-  return {score: Math.min(99, ds + stateBonus + propBonus + webBonus), dist};
+  const stateBonus = ns >= 20 ? 22 : ns >= 10 ? 16 : ns >= 5 ? 10 : ns >= 2 ? 6 : 2;
+  const propBonus = b.p >= 100 ? 16 : b.p >= 50 ? 11 : b.p >= 20 ? 7 : b.p >= 5 ? 4 : 1;
+  const webBonus = b.w ? 5 : 0;
+  const stateMatch = inState ? 8 : 0;
+  return {score: Math.min(99, ds + stateBonus + propBonus + webBonus + stateMatch), dist:bestDist};
 }
 function scoreGoogle(b, clat, clng, r1, r2, r3) {
   let ds=0,dist=null;
-  if(b.lat&&b.lng){dist=mi(clat,clng,b.lat,b.lng);if(dist<=r1)ds=46;else if(dist<=r2)ds=28;else if(dist<=r3)ds=12;else return{score:0,dist};}else ds=18;
+  if(b.lat&&b.lng){dist=mi(clat,clng,b.lat,b.lng);if(dist<=r1)ds=50;else if(dist<=r2)ds=32;else if(dist<=r3)ds=14;else return{score:0,dist};}else ds=20;
   let q=0;
-  if(b.rating>=4.5)q+=14;else if(b.rating>=4.0)q+=9;else if(b.rating>=3.5)q+=4;
-  if(b.reviewCount>300)q+=10;else if(b.reviewCount>100)q+=6;else if(b.reviewCount>30)q+=3;
-  if(b.website)q+=6;
-  return{score:Math.min(90,ds+q),dist};
+  if(b.rating>=4.5)q+=12;else if(b.rating>=4.0)q+=8;else if(b.rating>=3.5)q+=4;
+  if(b.reviewCount>300)q+=8;else if(b.reviewCount>100)q+=5;else if(b.reviewCount>30)q+=2;
+  if(b.website)q+=5;
+  return{score:Math.min(95,ds+q),dist};
 }
-function tier(s){return s>=72?1:s>=44?2:3;}
+function tier(s){return s>=55?1:s>=35?2:3;}
 
 // ═══ GOOGLE SEARCH ═══
 async function gSearch(coords, r3) {
@@ -440,13 +456,58 @@ async function gSearch(coords, r3) {
     const rad = Math.min(Math.round(r3 * 1609), 50000);
     const r = await fetch('/api/places?type=nearby&lat='+coords.lat+'&lng='+coords.lng+'&radius='+rad);
     const d = await r.json();
-    return (d.results||[]).map(b=>({
+    // Fetch details (website) for top 10 results
+    const results = d.results||[];
+    const enriched = await Promise.all(results.slice(0,10).map(async b => {
+      if (b.placeId) {
+        try {
+          const dr = await fetch('/api/places?type=details&placeId='+b.placeId);
+          const dd = await dr.json();
+          return {...b, website: dd.website||b.website||''};
+        } catch {}
+      }
+      return b;
+    }));
+    const rest = results.slice(10);
+    return [...enriched, ...rest].map(b=>({
       name:b.name, address:b.address, lat:b.lat, lng:b.lng,
       rating:b.rating||0, reviewCount:b.reviewCount||0,
       website:b.website||'', phone:b.phone||'', source:'google',
-      types:[] // Google type detection would require details call
+      types:[]
     }));
   } catch { return []; }
+}
+
+// Reverse lookup: find state for given coordinates
+const STATE_BOUNDS = {
+  'CA':[32.5,42,-124.5,-114],'WA':[45.5,49,-124.5,-116],'OR':[42,46.2,-124.5,-116],
+  'NV':[35,42,-120,-114],'AZ':[31.3,37,-114.9,-109],'UT':[37,42,-114,-109],
+  'CO':[37,41,-109,-102],'NM':[31.3,37,-109,-103],'TX':[25.8,36.5,-106.6,-93.5],
+  'ID':[42,49,-117,-111],'MT':[44.4,49,-116,-104],'WY':[41,45,-111,-104],
+  'ND':[45.9,49,-104,-96.5],'SD':[42.5,45.9,-104,-96.5],'NE':[40,43,-104,-95.3],
+  'KS':[36.9,40,-102,-94.6],'OK':[33.6,37,-103,-94],'MN':[43.5,49,-97,-89.5],
+  'IA':[40.4,43.5,-96.6,-90.1],'MO':[36,40.6,-95.8,-89],'WI':[42.5,47,-92.9,-86.8],
+  'IL':[36.9,42.5,-91.5,-87.5],'IN':[37.8,41.8,-88.1,-84.8],'OH':[38.4,41.9,-84.8,-80.5],
+  'MI':[41.7,48,-90.4,-82.4],'LA':[28.9,33,-94,-89],'MS':[30,35,-91.7,-88.1],
+  'AL':[30,35,-88.5,-84.9],'GA':[30.4,35,-85.6,-80.8],'FL':[24.4,31.1,-87.6,-80],
+  'TN':[34.9,36.7,-90.3,-81.6],'NC':[33.8,36.6,-84.3,-75.5],'SC':[32.1,35.2,-83.4,-78.5],
+  'VA':[36.5,39.5,-83.7,-75.2],'WV':[37.2,40.6,-82.6,-77.7],'KY':[36.5,39.1,-89.6,-81.9],
+  'AR':[33,36.5,-94.6,-89.6],'PA':[39.7,42.3,-80.5,-74.7],'NY':[40.5,45.1,-79.8,-71.9],
+  'NJ':[38.9,41.4,-75.6,-73.9],'CT':[41,42.1,-73.7,-71.8],'MD':[37.9,39.7,-79.5,-75.1],
+  'DE':[38.4,39.8,-75.8,-75],'MA':[41.2,42.9,-73.5,-69.9],'RI':[41.1,42.1,-71.9,-71.1],
+  'NH':[42.7,45.3,-72.6,-70.6],'VT':[42.7,45.1,-73.5,-71.5],'ME':[43,47.5,-71.1,-66.9],
+};
+function getTargetState(lat,lng){
+  for(const[st,[la1,la2,ln1,ln2]] of Object.entries(STATE_BOUNDS)){
+    if(lat>=la1&&lat<=la2&&lng>=ln1&&lng<=ln2) return st;
+  }
+  return null;
+}
+
+function googleMapsLink(lat, lng, name) {
+  if (!lat || !lng) return '';
+  const q = encodeURIComponent(name);
+  return \`https://www.google.com/maps/search/?api=1&query=\${q}&query_place_id=\`;
 }
 
 function dedup(sheet, google) {
@@ -605,8 +666,10 @@ function rTier(label,cls,buyers,color){
     const types=isGoogle?[]:b.t||[];
     const dist=b.dist!=null?b.dist.toFixed(0)+' mi':'—';
     const src=isGoogle?'<span class="src-tag src-google">Google</span>':'<span class="src-tag src-sheet">Database</span>';
+    const mapsUrl=isGoogle&&b.lat&&b.lng?`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(b.name+' '+( b.address||''))}`:'';
+    const mapsLink=mapsUrl?`<a href="${mapsUrl}" target="_blank" rel="noopener" title="View on Google Maps" style="font-size:10px;color:var(--blue);text-decoration:none;margin-left:4px;opacity:.8;">📍</a>`:'';
     return`<div class="brow">
-      <div style="min-width:0;"><div class="bname">${name}</div><div class="bsub">${src} ${typePill(types)}</div></div>
+      <div style="min-width:0;"><div class="bname">${name}${mapsLink}</div><div class="bsub">${src} ${typePill(types)}</div></div>
       <div class="dist-val">${dist}</div>
       <div style="font-family:DM Mono,monospace;font-size:12px;color:var(--stone);">${props}</div>
       <div style="font-size:12px;color:var(--stone);">${stateStr}</div>
@@ -698,22 +761,87 @@ function renderBrand(brandName,dbMatches){
 }
 
 function renderUSMap(){
-  const W=560,H=320,laMin=24,laMax=50,lnMin=-125,lnMax=-66;
-  function proj(la,ln){return{x:((ln-lnMin)/(lnMax-lnMin))*W,y:((laMax-la)/(laMax-laMin))*H};}
-  const dots=brandLocs.filter(l=>l.lat&&l.lng&&l.lat>24&&l.lat<50&&l.lng>-125&&l.lng<-66).map((l,i)=>{
-    const{x,y}=proj(l.lat,l.lng);
-    return`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="5" fill="var(--blue)" fill-opacity=".9" stroke="#fff" stroke-width="1.2" style="cursor:pointer;" onclick="selLoc(${i})" id="dot-${i}"><title>${l.name}</title></circle>`;
-  }).join('');
-  const el=document.getElementById('svgMap');
-  el.innerHTML=`<svg viewBox="0 0 ${W} ${H}" style="width:100%;background:#f5f2ee;display:block;" xmlns="http://www.w3.org/2000/svg">
-    <rect width="${W}" height="${H}" fill="#f4f7fa"/>
-    <line x1="${proj(37,-100).x.toFixed(0)}" y1="0" x2="${proj(37,-100).x.toFixed(0)}" y2="${H}" stroke="var(--fog)" stroke-width="1"/>
-    <line x1="0" y1="${proj(37,-100).y.toFixed(0)}" x2="${W}" y2="${proj(37,-100).y.toFixed(0)}" stroke="var(--fog)" stroke-width="1"/>
-    <text x="8" y="${H-8}" font-size="9" fill="var(--dust)" font-family="DM Sans,sans-serif" letter-spacing="0.5">SELECT A LOCATION TO FIND NEARBY TARGETS</text>
-    ${dots}
-  </svg>`;
-  el.classList.remove('hidden');
+  document.getElementById('mapPh').classList.add('hidden');
+  document.getElementById('svgMap').classList.add('hidden');
+  const container = document.getElementById('gmapContainer');
+  container.classList.remove('hidden');
+  // Load Google Maps dynamically using our backend key
+  if (window._gmapLoaded) {
+    initGMap();
+    return;
+  }
+  fetch('/api/places?type=mapskey').then(r=>r.json()).then(d=>{
+    const script = document.createElement('script');
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${d.key}&callback=initGMap`;
+    script.async = true;
+    window._gmapLoaded = true;
+    document.head.appendChild(script);
+  }).catch(()=>{
+    // Fallback to SVG map
+    renderSVGMap();
+  });
 }
+
+window.initGMap = function() {
+  const map = new google.maps.Map(document.getElementById('gmap'), {
+    zoom: 4,
+    center: {lat: 39.5, lng: -98.35},
+    mapTypeControl: false,
+    streetViewControl: false,
+    fullscreenControl: true,
+    styles: [
+      {featureType:'water',stylers:[{color:'#dce8f5'}]},
+      {featureType:'landscape',stylers:[{color:'#f4f7fa'}]},
+      {featureType:'road',stylers:[{visibility:'simplified'}]},
+      {featureType:'poi',stylers:[{visibility:'off'}]},
+      {featureType:'administrative',elementType:'geometry',stylers:[{color:'#a8c4e0'}]},
+    ]
+  });
+  window._gmap = map;
+  window._gmarkers = [];
+  // Clear old markers
+  (window._gmarkers||[]).forEach(m=>m.setMap(null));
+  window._gmarkers = [];
+  // Add markers for all locations
+  const bounds = new google.maps.LatLngBounds();
+  const infoWindow = new google.maps.InfoWindow();
+  brandLocs.filter(l=>l.lat&&l.lng).forEach((l,i)=>{
+    const marker = new google.maps.Marker({
+      position: {lat:l.lat, lng:l.lng},
+      map,
+      title: l.name,
+      icon: {
+        path: google.maps.SymbolPath.CIRCLE,
+        scale: 8,
+        fillColor: '#1b6fc8',
+        fillOpacity: 0.9,
+        strokeColor: '#ffffff',
+        strokeWeight: 2,
+      }
+    });
+    marker.addListener('click', ()=>{
+      infoWindow.setContent(`<div style="font-family:DM Sans,sans-serif;padding:4px 2px;"><div style="font-weight:600;font-size:13px;color:#0a0a0a;">${l.name}</div><div style="font-size:11px;color:#6b6b6b;margin:3px 0;">${l.address||''}</div>${l.rating?`<div style="font-size:11px;color:#1b6fc8;">★ ${l.rating}</div>`:''}<a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(l.name+' '+l.address)}" target="_blank" style="font-size:11px;color:#1b6fc8;text-decoration:none;">View on Maps →</a></div>`);
+      infoWindow.open(map, marker);
+      selLoc(i);
+    });
+    window._gmarkers.push(marker);
+    bounds.extend({lat:l.lat,lng:l.lng});
+  });
+  if (brandLocs.filter(l=>l.lat&&l.lng).length > 0) map.fitBounds(bounds);
+  document.getElementById('mapHint').classList.remove('hidden');
+}
+
+function renderSVGMap(){
+  const W=700,H=420,laMin=24,laMax=50,lnMin=-125,lnMax=-66;
+  function proj(la,ln){return{x:((ln-lnMin)/(lnMax-lnMin))*W,y:((laMax-la)/(laMax-laMin))*H};}
+  const ST=[['CA',32.5,42,-124.5,-114],['WA',45.5,49,-124.5,-116],['OR',42,46.2,-124.5,-116],['NV',35,42,-120,-114],['AZ',31.3,37,-114.9,-109],['UT',37,42,-114,-109],['CO',37,41,-109,-102],['NM',31.3,37,-109,-103],['TX',25.8,36.5,-106.6,-93.5],['ID',42,49,-117,-111],['MT',44.4,49,-116,-104],['WY',41,45,-111,-104],['ND',45.9,49,-104,-96.5],['SD',42.5,45.9,-104,-96.5],['NE',40,43,-104,-95.3],['KS',36.9,40,-102,-94.6],['OK',33.6,37,-103,-94],['MN',43.5,49,-97,-89.5],['IA',40.4,43.5,-96.6,-90.1],['MO',36,40.6,-95.8,-89],['WI',42.5,47,-92.9,-86.8],['IL',36.9,42.5,-91.5,-87.5],['IN',37.8,41.8,-88.1,-84.8],['OH',38.4,41.9,-84.8,-80.5],['MI',41.7,48,-90.4,-82.4],['LA',28.9,33,-94,-89],['MS',30,35,-91.7,-88.1],['AL',30,35,-88.5,-84.9],['GA',30.4,35,-85.6,-80.8],['FL',24.4,31.1,-87.6,-80],['TN',34.9,36.7,-90.3,-81.6],['NC',33.8,36.6,-84.3,-75.5],['SC',32.1,35.2,-83.4,-78.5],['VA',36.5,39.5,-83.7,-75.2],['WV',37.2,40.6,-82.6,-77.7],['KY',36.5,39.1,-89.6,-81.9],['AR',33,36.5,-94.6,-89.6],['PA',39.7,42.3,-80.5,-74.7],['NY',40.5,45.1,-79.8,-71.9],['NJ',38.9,41.4,-75.6,-73.9],['CT',41,42.1,-73.7,-71.8],['MD',37.9,39.7,-79.5,-75.1],['MA',41.2,42.9,-73.5,-69.9],['ME',43,47.5,-71.1,-66.9]];
+  const stateRects=ST.map(([label,la1,la2,ln1,ln2])=>{const p1=proj(la1,ln1),p2=proj(la2,ln2);const x=Math.min(p1.x,p2.x),y=Math.min(p1.y,p2.y),w=Math.abs(p2.x-p1.x),h=Math.abs(p2.y-p1.y);const cx=(p1.x+p2.x)/2,cy=(p1.y+p2.y)/2;const txt=w>16?`<text x="${cx.toFixed(0)}" y="${(cy+3).toFixed(0)}" text-anchor="middle" font-size="7" fill="#6b9fc8" font-family="DM Sans,sans-serif">${label}</text>`:'';return`<rect x="${x.toFixed(0)}" y="${y.toFixed(0)}" width="${w.toFixed(0)}" height="${h.toFixed(0)}" fill="#dce8f5" stroke="#a8c4e0" stroke-width="0.7" rx="1"/>${txt}`;}).join('');
+  const dots=brandLocs.filter(l=>l.lat&&l.lng&&l.lat>24&&l.lat<50&&l.lng>-125&&l.lng<-66).map((l,i)=>{const{x,y}=proj(l.lat,l.lng);return`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="6" fill="var(--blue)" fill-opacity=".9" stroke="#fff" stroke-width="1.5" style="cursor:pointer;" onclick="selLoc(${i})" id="dot-${i}"><title>${l.name}</title></circle>`;}).join('');
+  document.getElementById('svgMap').innerHTML=`<svg viewBox="0 0 ${W} ${H}" style="width:100%;background:#eef4fb;display:block;" xmlns="http://www.w3.org/2000/svg"><rect width="${W}" height="${H}" fill="#eef4fb"/>${stateRects}${dots}<text x="8" y="${H-8}" font-size="9" fill="#9b9b9b" font-family="DM Sans,sans-serif" letter-spacing="0.8">CLICK ANY LOCATION TO FIND NEARBY ACQUISITION TARGETS</text></svg>`;
+  document.getElementById('svgMap').classList.remove('hidden');
+  document.getElementById('gmapContainer').classList.add('hidden');
+}
+
 
 async function selLoc(i){
   selectedLoc=brandLocs[i];
