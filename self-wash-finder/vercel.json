@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "builds": [
+    { "src": "index.html", "use": "@vercel/static" },
+    { "src": "api/places.js", "use": "@vercel/node" }
+  ],
+  "routes": [
+    { "src": "/api/places", "dest": "/api/places.js" },
+    { "src": "/(.*)", "dest": "/index.html" }
+  ]
+}

@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Self-Serve Car Wash Finder — Broward & Dade</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{--blue:#1b6fc8;--blue-lt:#e6f1fb;--ink:#0a0a0a;--stone:#6b6b6b;--dust:#9b9b9b;--fog:#e0e5ea;--cream:#f4f7fa;--paper:#f8fafc;--green:#27b05e;--gbg:#eaf3de;--gt:#27500a;--r:6px;--rl:10px;}
+body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);min-height:100vh;font-size:14px;}
+.nav{background:#fff;border-bottom:2px solid var(--blue);height:60px;padding:0 2rem;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;box-shadow:0 2px 10px rgba(27,111,200,.07);}
+.pill{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--stone);background:var(--cream);border-radius:20px;padding:4px 12px;border:1px solid var(--fog);}
+.sdot{width:6px;height:6px;border-radius:50%;background:var(--dust);}
+.sdot.live{background:var(--green);animation:pulse 2s ease-in-out infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.layout{display:grid;grid-template-columns:360px 1fr;gap:0;height:calc(100vh - 60px);}
+.sidebar{display:flex;flex-direction:column;background:#fff;border-right:1px solid var(--fog);overflow:hidden;}
+.sidebar-head{padding:1.25rem 1.5rem;border-bottom:1px solid var(--fog);flex-shrink:0;}
+.sidebar-title{font-size:16px;font-weight:500;margin-bottom:2px;}
+.sidebar-sub{font-size:12px;color:var(--stone);}
+.county-row{display:flex;gap:8px;padding:1rem 1.5rem;border-bottom:1px solid var(--fog);flex-shrink:0;}
+.cbtn{flex:1;padding:8px;border-radius:var(--r);border:1.5px solid var(--fog);background:#fff;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;cursor:pointer;transition:all .15s;color:var(--stone);text-align:center;}
+.cbtn.on{border-color:var(--blue);background:var(--blue-lt);color:var(--blue);}
+.search-btn{margin:1rem 1.5rem;padding:11px;background:var(--blue);color:#fff;border:none;border-radius:var(--r);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:opacity .15s;flex-shrink:0;}
+.search-btn:hover{opacity:.85;}
+.search-btn:disabled{opacity:.45;cursor:not-allowed;}
+.stats{display:flex;gap:12px;padding:.6rem 1.5rem;background:var(--cream);border-bottom:1px solid var(--fog);font-size:11px;color:var(--stone);flex-shrink:0;}
+.stats strong{color:var(--ink);}
+.list{flex:1;overflow-y:auto;}
+.wrow{padding:11px 1.5rem;border-bottom:1px solid var(--fog);cursor:pointer;transition:background .1s;}
+.wrow:hover{background:var(--cream);}
+.wrow.sel{background:var(--blue-lt);border-left:3px solid var(--blue);padding-left:calc(1.5rem - 3px);}
+.wname{font-size:13px;font-weight:500;margin-bottom:2px;}
+.waddr{font-size:11px;color:var(--stone);margin-bottom:4px;}
+.wmeta{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.tag{font-size:10px;padding:2px 7px;border-radius:20px;font-weight:500;white-space:nowrap;}
+.t-b{background:var(--blue-lt);color:#185fa5;}
+.t-d{background:#faeeda;color:#854f0b;}
+.t-r{background:var(--gbg);color:var(--gt);}
+.wlink{font-size:11px;color:var(--blue);text-decoration:none;}
+.wlink:hover{text-decoration:underline;}
+.export-row{padding:.75rem 1.5rem;border-top:1px solid var(--fog);flex-shrink:0;}
+.exp-btn{width:100%;padding:8px;border-radius:var(--r);border:1px solid var(--fog);background:#fff;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:background .12s;}
+.exp-btn:hover{background:var(--cream);}
+#map{flex:1;height:100%;}
+.spinner{width:13px;height:13px;border:1.5px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.empty{padding:2rem;text-align:center;color:var(--dust);font-size:13px;}
+.prog{padding:.75rem 1.5rem;font-size:12px;color:var(--stone);display:flex;align-items:center;gap:8px;flex-shrink:0;border-bottom:1px solid var(--fog);}
+.prog-spinner{width:12px;height:12px;border:1.5px solid var(--fog);border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite;}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div style="display:inline-block;position:relative;">
+    <span style="position:absolute;left:0;top:2px;bottom:2px;width:7px;border-left:2px solid var(--blue);border-top:2px solid var(--blue);border-bottom:2px solid var(--blue);border-radius:2px 0 0 2px;"></span>
+    <span style="position:absolute;right:0;top:2px;bottom:2px;width:7px;border-right:2px solid var(--blue);border-top:2px solid var(--blue);border-bottom:2px solid var(--blue);border-radius:0 2px 2px 0;"></span>
+    <div style="padding:2px 13px 1px;">
+      <div style="font-size:17px;font-weight:300;letter-spacing:5px;color:var(--ink);text-transform:uppercase;line-height:1.15;">MIRACLE</div>
+      <div style="font-size:6px;letter-spacing:2.5px;color:var(--blue);text-transform:uppercase;font-weight:600;text-align:center;margin-top:1px;">CAR WASH ADVISORS</div>
+    </div>
+  </div>
+  <div class="pill"><span class="sdot" id="sdot"></span><span id="stxt">Ready to search</span></div>
+</nav>
+
+<div class="layout">
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-head">
+      <div class="sidebar-title">Self-Serve Car Wash Finder</div>
+      <div class="sidebar-sub">Broward & Miami-Dade County, Florida</div>
+    </div>
+
+    <div class="county-row">
+      <button class="cbtn on" id="btnB" onclick="toggle('b')">🔵 Broward County</button>
+      <button class="cbtn on" id="btnD" onclick="toggle('d')">🟠 Miami-Dade County</button>
+    </div>
+
+    <button class="search-btn" id="searchBtn" onclick="search()">
+      <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><circle cx="6" cy="6" r="4" stroke="currentColor" stroke-width="1.5"/><path d="M9.5 9.5L13 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      Search Self-Serve Car Washes
+    </button>
+
+    <div id="prog" class="prog" style="display:none;"><span class="prog-spinner"></span><span id="progTxt">Searching...</span></div>
+    <div id="stats" class="stats" style="display:none;">
+      <span><strong id="tot">0</strong> total</span>
+      <span><strong id="bcnt">0</strong> Broward</span>
+      <span><strong id="dcnt">0</strong> Miami-Dade</span>
+    </div>
+
+    <div id="list" class="list"><div class="empty" style="margin-top:2rem;">Select counties above and click Search to find self-serve car washes.</div></div>
+
+    <div id="expRow" class="export-row" style="display:none;">
+      <button class="exp-btn" onclick="exportCSV()">
+        <svg width="11" height="11" viewBox="0 0 14 14" fill="none"><path d="M7 2v7M4 6l3 3 3-3M2 11h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Export All as CSV
+      </button>
+    </div>
+  </div>
+
+  <!-- MAP -->
+  <div id="map"></div>
+</div>
+
+<script>
+let sel = {b:true, d:true};
+let results = [], markers = [], map = null, iw = null, activeI = -1;
+
+const AREAS = {
+  b: [
+    {n:'Fort Lauderdale',lat:26.1224,lng:-80.1373},
+    {n:'Hollywood',lat:26.0112,lng:-80.1495},
+    {n:'Pembroke Pines',lat:26.0073,lng:-80.2962},
+    {n:'Miramar',lat:25.9871,lng:-80.3322},
+    {n:'Coral Springs',lat:26.2712,lng:-80.2706},
+    {n:'Pompano Beach',lat:26.2379,lng:-80.1248},
+    {n:'Deerfield Beach',lat:26.3184,lng:-80.0998},
+    {n:'Plantation',lat:26.1276,lng:-80.2331},
+    {n:'Sunrise',lat:26.1503,lng:-80.2997},
+    {n:'Davie',lat:26.0765,lng:-80.2521},
+    {n:'Weston',lat:26.1003,lng:-80.3998},
+    {n:'Hallandale Beach',lat:25.9812,lng:-80.1481},
+    {n:'Margate',lat:26.2445,lng:-80.2065},
+    {n:'Tamarac',lat:26.2128,lng:-80.2498},
+  ],
+  d: [
+    {n:'Miami',lat:25.7617,lng:-80.1918},
+    {n:'Hialeah',lat:25.8576,lng:-80.2781},
+    {n:'Miami Gardens',lat:25.9420,lng:-80.2456},
+    {n:'Homestead',lat:25.4687,lng:-80.4776},
+    {n:'Kendall',lat:25.6775,lng:-80.4283},
+    {n:'Doral',lat:25.8195,lng:-80.3553},
+    {n:'Aventura',lat:25.9564,lng:-80.1392},
+    {n:'North Miami',lat:25.8897,lng:-80.1867},
+    {n:'Coral Gables',lat:25.7215,lng:-80.2684},
+    {n:'Cutler Bay',lat:25.5783,lng:-80.3459},
+    {n:'Miami Beach',lat:25.7907,lng:-80.1300},
+    {n:'Opa-locka',lat:25.9023,lng:-80.2503},
+    {n:'Westchester',lat:25.7474,lng:-80.3523},
+    {n:'Perrine',lat:25.6107,lng:-80.3553},
+  ]
+};
+
+function toggle(c) {
+  sel[c] = !sel[c];
+  document.getElementById(c==='b'?'btnB':'btnD').classList.toggle('on', sel[c]);
+}
+
+function setStatus(s, msg) {
+  document.getElementById('stxt').textContent = msg;
+  document.getElementById('sdot').className = 'sdot'+(s==='live'?' live':'');
+}
+
+async function search() {
+  const areas = [];
+  if (sel.b) AREAS.b.forEach(a => areas.push({...a, county:'Broward'}));
+  if (sel.d) AREAS.d.forEach(a => areas.push({...a, county:'Miami-Dade'}));
+  if (!areas.length) { alert('Select at least one county.'); return; }
+
+  const btn = document.getElementById('searchBtn');
+  btn.innerHTML = '<span class="spinner"></span> Searching...';
+  btn.disabled = true;
+  document.getElementById('prog').style.display = 'flex';
+  document.getElementById('stats').style.display = 'none';
+  document.getElementById('expRow').style.display = 'none';
+  document.getElementById('list').innerHTML = '';
+  results = []; markers.forEach(m=>m.setMap&&m.setMap(null)); markers = [];
+  setStatus('loading', 'Searching...');
+
+  if (!window.google) await loadMaps();
+
+  const seen = new Set();
+  const keywords = ['self serve car wash', 'coin car wash', 'self-serve car wash'];
+
+  for (let i=0; i<areas.length; i++) {
+    const a = areas[i];
+    document.getElementById('progTxt').textContent = `Searching ${a.n}... (${i+1}/${areas.length})`;
+    for (const kw of keywords) {
+      try {
+        const r = await fetch(`/api/places?type=nearby&lat=${a.lat}&lng=${a.lng}&radius=7000&keyword=${encodeURIComponent(kw)}`);
+        const d = await r.json();
+        (d.results||[]).forEach(p => {
+          if (!seen.has(p.placeId) && cleanName(p.name)) {
+            seen.add(p.placeId);
+            results.push({...p, county:a.county, area:a.n});
+          }
+        });
+      } catch(e) {}
+      await new Promise(r=>setTimeout(r,150));
+    }
+  }
+
+  results.sort((a,b)=>a.county.localeCompare(b.county)||a.name.localeCompare(b.name));
+  document.getElementById('prog').style.display = 'none';
+  renderList();
+  renderMap();
+  btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 14 14" fill="none"><circle cx="6" cy="6" r="4" stroke="currentColor" stroke-width="1.5"/><path d="M9.5 9.5L13 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg> Search Again';
+  btn.disabled = false;
+  setStatus('live', `${results.length} self-serve washes found`);
+}
+
+function cleanName(name) {
+  const n = name.toLowerCase();
+  return !['tire','lube','oil change','auto repair','mechanic','detailing','mobile detail'].some(b=>n.includes(b));
+}
+
+function renderList() {
+  const b = results.filter(r=>r.county==='Broward');
+  const d = results.filter(r=>r.county==='Miami-Dade');
+  document.getElementById('tot').textContent = results.length;
+  document.getElementById('bcnt').textContent = b.length;
+  document.getElementById('dcnt').textContent = d.length;
+  document.getElementById('stats').style.display = 'flex';
+  document.getElementById('expRow').style.display = 'block';
+
+  if (!results.length) {
+    document.getElementById('list').innerHTML = '<div class="empty">No self-serve washes found. Try again.</div>';
+    return;
+  }
+
+  document.getElementById('list').innerHTML = results.map((w,i) => {
+    const isBroward = w.county==='Broward';
+    const maps = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(w.address||w.name)}`;
+    const rating = w.rating ? `<span class="tag t-r">★ ${w.rating}</span>` : '';
+    const web = w.website ? `<a class="wlink" href="${w.website}" target="_blank" onclick="event.stopPropagation()">${w.website.replace(/^https?:\/\/(www\.)?/,'').split('/')[0]}</a>` : '';
+    return `<div class="wrow" id="r${i}" onclick="pick(${i})">
+      <div class="wname">${w.name} <a href="${maps}" target="_blank" onclick="event.stopPropagation()" style="color:#e03030;text-decoration:none;font-size:13px;">📍</a></div>
+      <div class="waddr">${w.address||'—'}</div>
+      <div class="wmeta"><span class="tag ${isBroward?'t-b':'t-d'}">${w.county}</span>${rating}${web}</div>
+    </div>`;
+  }).join('');
+}
+
+function pick(i) {
+  if (activeI>=0) document.getElementById('r'+activeI)?.classList.remove('sel');
+  activeI = i;
+  document.getElementById('r'+i)?.classList.add('sel');
+  document.getElementById('r'+i)?.scrollIntoView({block:'nearest',behavior:'smooth'});
+  if (map && markers[i]) {
+    map.setCenter(markers[i].getPosition());
+    map.setZoom(15);
+    if (iw) iw.close();
+    const w = results[i];
+    iw = new google.maps.InfoWindow({content:`<div style="font-family:DM Sans,sans-serif;padding:4px;max-width:220px;"><div style="font-weight:500;font-size:13px;margin-bottom:3px;">${w.name}</div><div style="font-size:11px;color:#6b6b6b;">${w.address||''}</div>${w.rating?`<div style="font-size:11px;color:#27500a;margin-top:3px;">★ ${w.rating} (${w.reviewCount||0} reviews)</div>`:''}<div style="margin-top:5px;"><span style="background:${w.county==='Broward'?'#e6f1fb':'#faeeda'};color:${w.county==='Broward'?'#185fa5':'#854f0b'};padding:2px 7px;border-radius:20px;font-size:10px;">${w.county}</span></div></div>`});
+    iw.open(map, markers[i]);
+  }
+}
+
+async function loadMaps() {
+  const r = await fetch('/api/places?type=mapskey');
+  const d = await r.json();
+  return new Promise((res,rej) => {
+    const s = document.createElement('script');
+    s.src = `https://maps.googleapis.com/maps/api/js?key=${d.key}`;
+    s.onload = res; s.onerror = rej;
+    document.head.appendChild(s);
+  });
+}
+
+function renderMap() {
+  if (!window.google) return;
+  if (!map) {
+    map = new google.maps.Map(document.getElementById('map'), {
+      center:{lat:25.88,lng:-80.25}, zoom:10,
+      mapTypeControl:false, streetViewControl:false,
+      styles:[{featureType:'poi',stylers:[{visibility:'off'}]}]
+    });
+  } else { map.setCenter({lat:25.88,lng:-80.25}); map.setZoom(10); }
+  markers.forEach(m=>m.setMap&&m.setMap(null)); markers=[];
+  results.forEach((w,i) => {
+    if (!w.lat||!w.lng) return;
+    const m = new google.maps.Marker({
+      position:{lat:w.lat,lng:w.lng}, map, title:w.name,
+      icon:{path:google.maps.SymbolPath.CIRCLE,scale:8,
+        fillColor:w.county==='Broward'?'#1b6fc8':'#e87722',
+        fillOpacity:.9,strokeColor:'#fff',strokeWeight:2}
+    });
+    m.addListener('click',()=>pick(i));
+    markers.push(m);
+  });
+}
+
+function exportCSV() {
+  const rows=[['Name','Address','County','Rating','Reviews','Website','Google Maps']];
+  results.forEach(w=>{
+    const maps=`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(w.address||w.name)}`;
+    rows.push([w.name,w.address||'',w.county,w.rating||'',w.reviewCount||'',w.website||'',maps]);
+  });
+  const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download='MiracleAdvisors_SelfServe_BrowardDade.csv';
+  a.click();
+}
+</script>
+</body>
+</html>
